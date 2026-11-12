@@ -1,0 +1,81 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx,booktabs,amsmath,amssymb,hyperref,xcolor,longtable,listings}
+\graphicspath{{../figures/}}
+\hypersetup{colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black}
+\lstset{basicstyle=\ttfamily\small,breaklines=true,frame=single}
+
+\title{Global Superstore: Retail Analytics \& Profitability Forecasting\\
+\large Applied Data Science Project with Python --- MMSE, UAB 2026--2027}
+\author{Alejandro Velardo \and Member 2 \and Member 3 \and Member 4}
+\date{\today}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+% 150--200 words: problem, data, approach, best model vs. baseline (numbers), key insight on discounts.
+TODO
+\end{abstract}
+\tableofcontents
+\newpage
+
+% ---------------------------------------------------------------------------
+\section{Introduction \& Problem Statement}
+% Context of the dataset; problem categorisation (time-series forecasting / supervised regression);
+% research questions & hypotheses (e.g. H1: ML with lag+calendar features beats seasonal naive;
+% H2: discount effect on profit is non-linear and category-dependent); team goals.
+
+% ---------------------------------------------------------------------------
+\section{Data Cleaning \& Feature Engineering}
+\subsection{Data audit}           % schema, types, missingness table (from audit()), duplicates
+\subsection{Cleaning decisions}   % each decision + justification + impact (rows affected)
+\subsection{Outliers}             % flag vs cap vs drop; why
+\subsection{Encoding \& scaling}  % one-hot, cyclical month, StandardScaler for linear models only
+\subsection{Temporal aggregation \& features} % panel construction, lags, rolling, discount interactions, leakage control
+
+% ---------------------------------------------------------------------------
+\section{Exploratory Data Analysis \& Visual Storytelling}
+% Trend & seasonality, discount vs margin, market/category heterogeneity. Each figure: insight + implication.
+% \begin{figure}[h]\centering\includegraphics[width=.9\linewidth]{sales_monthly_by_category.pdf}
+% \caption{...}\end{figure}
+
+% ---------------------------------------------------------------------------
+\section{Theoretical Foundations \& Model Justification}
+\subsection{Baselines}  % naive, seasonal naive, moving average
+\subsection{Regularised linear models} % Ridge/Lasso objective, bias-variance, log-target, multicollinearity of lags
+\subsection{Tree ensembles}            % RF (bagging, variance reduction), gradient boosting (additive stagewise)
+\subsection{Why these models for this data} % small n of periods, non-linear discount effects, interactions
+
+% ---------------------------------------------------------------------------
+\section{Model Implementation \& Performance Evaluation}
+\subsection{Validation strategy} % expanding-window CV, horizon, gap; why not K-fold
+\subsection{Metrics}             % WAPE, MAE, RMSE, MASE; why
+\subsection{Hyperparameter tuning}
+\subsection{Results}             % table baseline vs advanced (mean ± sd over folds), residual analysis, SHAP
+
+% ---------------------------------------------------------------------------
+\section{Challenges, Enablers \& Lessons Learned}
+
+% ---------------------------------------------------------------------------
+\section{Individual Contribution Breakdown}
+\begin{tabular}{@{}lp{10cm}@{}}
+\toprule
+Member & Role and tasks \\ \midrule
+Alejandro Velardo & TODO \\
+Member 2 & TODO \\
+Member 3 & TODO \\
+Member 4 & TODO \\ \bottomrule
+\end{tabular}
+
+% ---------------------------------------------------------------------------
+\section{Transparent Generative AI Declaration}
+See Appendix~\ref{app:ai}.
+
+\appendix
+\section{Declaration of Generative AI Tool Usage}\label{app:ai}
+% Required: tools used, key prompts, scope of assistance, and >=1 example where the AI output was
+% wrong/suboptimal and how the team detected and fixed it. Source: docs/ai_usage_log.md
+
+\end{document}
