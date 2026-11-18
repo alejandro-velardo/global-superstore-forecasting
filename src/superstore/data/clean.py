@@ -5,6 +5,12 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+SHIP_RANGE = {
+    "Same Day": (0, 1), 
+    "First Class": (1, 3), 
+    "Second Class": (2, 5), 
+    "Standard Class": (4, 7)
+}
 
 def audit(df: pd.DataFrame) -> pd.DataFrame:
     """One row per column: dtype, missing count/%, cardinality and an example value."""
@@ -26,6 +32,15 @@ def iqr_outlier_mask(s: pd.Series, k: float = 1.5) -> pd.Series:
     iqr = q3 - q1
     return (s < q1 - k * iqr) | (s > q3 + k * iqr)
 
+def validate_orders(o: pd.DataFrame) -> None:
+    mode = o["ship_mode"].astype(str)
+    lo, hi = mode.map(lambda k: SHIP_RANGE[k][0]), mode.map(lambda k: SHIP_RANGE[k][1])
+    assert o["ship_days"].between(lo, hi).all(), "ship_days inconsistent with ship_mode"
+    assert not o["flag_ship_before_order"].any(), "ship before order"
+    assert o["discount"].between(0, 1).all(), "discount outside [0, 1]"
+    assert np.isclose(o["sales"] / o["quantity"], o["unit_price"], rtol=1e-4).all(), "unit_price mismatch"
+    assert o.loc[o["postal_code"].notna(), "country"].eq("United States").all(), "postal_code outside US"
+    assert o["order_date"].notna().all() and o["sales"].notna().all()
 
 def clean_orders(df: pd.DataFrame) -> pd.DataFrame:
     """Clean order lines and add derived fields.
@@ -33,8 +48,11 @@ def clean_orders(df: pd.DataFrame) -> pd.DataFrame:
     Decisions (justify/revise them in the report!):
     - drop exact duplicates and the `row_id` surrogate key;
     - drop rows without order date or sales (cannot be placed in time / no target);
-    - flag (do NOT drop) rows with ship_date < order_date and IQR outliers — retail extremes are
-      usually real large orders, not errors; decide per model whether to cap them.
+    - never drop outliers or repeated order-product lines: they are flagged
+      (flag_outlier_*, flag_dup_key, flag_ship_before_order) because extreme orders are real; 
+      decide per model whether to cap them.
+    - discount rounded to 2 decimals (float32 noise) before binning;
+    - no scaling here to avoid leakage
     """
     log = {"rows_raw": len(df)}     # we will log what each step removes
 
@@ -84,5 +102,9 @@ def clean_orders(df: pd.DataFrame) -> pd.DataFrame:
         if col in out.columns:
             out[f"flag_outlier_{col}"] = iqr_outlier_mask(out[col])
 
+    out = out.sort_values("order_date", kind="stable").reset_index(drop=True)
+    log["rows_clean"] = len(out)
     out.attrs["cleaning_log"] = log
-    return out.sort_values("order_date").reset_index(drop=True)
+    validate_orders(out)
+
+    return out
