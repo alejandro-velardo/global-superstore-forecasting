@@ -36,8 +36,30 @@ def clean_orders(df: pd.DataFrame) -> pd.DataFrame:
     - flag (do NOT drop) rows with ship_date < order_date and IQR outliers — retail extremes are
       usually real large orders, not errors; decide per model whether to cap them.
     """
+    log = {"rows_raw": len(df)}     # we will log what each step removes
+
     out = df.drop(columns=["row_id"], errors="ignore").drop_duplicates()
+    log["dropped_exact_dups"] = log["rows_raw"] - len(out)
+
+    # Flag repeated order-product combinations
+    if {"order_id", "product_id"} <= set(out.columns):
+        out["flag_dup_key"] = out.duplicated(
+            ["order_id", "product_id"], keep=False
+        )
+
+    n = len(out)
     out = out.dropna(subset=[c for c in ("order_date", "sales") if c in out.columns])
+    log["dropped_missing_key"] = n - len(out)
+
+    # a reliable order key
+    out["order_key"] = (out["order_id"].astype(str) + "|" + out["customer_id"].astype(str)
+                        + "|" + out["order_date"].dt.strftime("%Y-%m-%d"))
+    g = out.groupby("order_id", observed=True)
+    out["flag_order_id_collision"] = (g["customer_id"].transform("nunique") > 1) | \
+                                    (g["order_date"].transform("nunique") > 1)
+
+    # a reliable product key
+    out["product_key"] = out["product_id"].astype(str) + "|" + out["product_name"].astype(str)
 
     if {"order_date", "ship_date"} <= set(out.columns):
         out["ship_days"] = (out["ship_date"] - out["order_date"]).dt.days
@@ -51,6 +73,7 @@ def clean_orders(df: pd.DataFrame) -> pd.DataFrame:
         out["unit_price"] = out["sales"] / out["quantity"].replace(0, np.nan)
 
     if "discount" in out.columns:
+        out["discount"] = out["discount"].astype("float64").round(2)   # also removes 0.002 / 0.202 / 0.402 to prevent errors in the band edges
         out["discount_band"] = pd.cut(
             out["discount"],
             bins=[-np.inf, 0, 0.1, 0.2, 0.3, 0.5, np.inf],
@@ -61,4 +84,5 @@ def clean_orders(df: pd.DataFrame) -> pd.DataFrame:
         if col in out.columns:
             out[f"flag_outlier_{col}"] = iqr_outlier_mask(out[col])
 
+    out.attrs["cleaning_log"] = log
     return out.sort_values("order_date").reset_index(drop=True)
